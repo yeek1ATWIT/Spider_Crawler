@@ -7,3 +7,4 @@ pip install selenium
 pip install futures
 pip install urllib3
 pip install httpx
+pip install httpx[http2]
