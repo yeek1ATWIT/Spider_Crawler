@@ -21,11 +21,7 @@ class Person:
 class Document:
     def __init__(self, url):
         self.url = url
-        self.first_name = ''
-        self.last_name = ''
-        self.phone_numbers = []
-        self.addresses = []
-        self.family_members = []
+        self.info = ''
         self.relevance_score = 0
 
 class SearchEntry:
@@ -35,13 +31,14 @@ class SearchEntry:
 
 class Search:
     def __init__(self, input, weight):
-        self.general = SearchEntry(input[0], weight[0])
-        self.first_name = SearchEntry(input[1], weight[1])
-        self.last_name = SearchEntry(input[2], weight[2])
-        self.phone_numbers = SearchEntry(input[3], weight[3])
-        self.addresses = SearchEntry(input[4], weight[4])
-        self.hometown = SearchEntry(input[5], weight[5])
-        self.picture = SearchEntry(input[6], weight[6])
+        self.first_name = SearchEntry(input[0], weight[0])
+        self.middle_name = SearchEntry(input[1], weight[0])
+        self.last_name = SearchEntry(input[2], weight[0])
+        self.birthday = SearchEntry(input[3]+input[4]+input[5], weight[1])
+        self.phone_number = SearchEntry(input[6]+input[7]+input[8], weight[2])
+        self.address = SearchEntry(input[9]+input[10]+input[11], weight[3])
+        self.home = SearchEntry(input[12], weight[4])
+        self.picture = SearchEntry(input[13], weight[5])
 
     def get_all_entries(self):
         return [attr for attr in self.__dict__.values()]
@@ -105,12 +102,9 @@ class SearchType1:
             phone_numbers, addresses = SearchType1.extract_info_from_html(document_text)
 
             document = Document(url)
-            document.first_name = "Sample"
-            document.last_name = "Name"
-            document.phone_numbers = phone_numbers
-            document.addresses = addresses
-            document.relevance_score = SearchType1.calculate_relevance(document_text, inputs, weights)
-
+            document.info = "Hi"
+            #document.relevance_score = SearchType1.calculate_relevance(document_text, inputs, weights)
+            document.relevance_score=2
             db.save_document_to_db(document)
         except Exception as e:
             print(f"Failed to fetch or parse {url}: {e}\n")
@@ -236,14 +230,10 @@ class SearchType1:
             weights = []
             query_values = search_query.get_all_entries()
 
-            if query_values[0].weight:
-                inputs.append(query_values[0].value)
-                weights.append(1)
-            else:
-                for i in range(1, 6):
-                    inputs.append(query_values[i].value)
-                    weights.append(query_values[i].weight if query_values[i].value else 0)
-            
+            for i in range(7):
+                inputs.append(query_values[i].value)
+                weights.append(query_values[i].weight if query_values[i].value else 0)
+        
         
             #run_spider(' '.join(inputs))
             '''

@@ -1,6 +1,6 @@
 import requests
 import threading
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QSlider, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QFrame, QGridLayout, QCheckBox
+from PyQt5.QtWidgets import QWidget, QTextEdit, QComboBox, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QSlider, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QFrame, QGridLayout, QCheckBox
 from PyQt5.QtCore import Qt, QTimer, QLoggingCategory
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QFileDialog, QLabel,QScrollArea
@@ -94,10 +94,201 @@ class WebCrawlerApp(QWidget):
         self.setGeometry(100, 100, 2800, 1600)  # Set initial window size (x, y, width, height)
 
         main_layout = QGridLayout()
-        main_layout.setSpacing(100)
-        main_layout.setContentsMargins(100,60,100,60)
+        main_layout.setSpacing(5)
+        main_layout.setContentsMargins(30,30,30,30)
         self.setLayout(main_layout)
 
+        font = QFont("Microsoft YaHei Light") 
+        first_row = 6
+        # Credentials
+        credential_frame = QFrame(self)
+        credential_frame.setStyleSheet(f"QFrame {{background-color: {BACKGROUND_COLOR}; border: 2px solid {ORANGE_COLOR}; padding: 0px;}};;")
+        credential_layout = QGridLayout()
+        credential_frame.setLayout(credential_layout)
+        credential_layout.setSpacing(0)
+        credential_layout.setContentsMargins(0,0,0,0)
+        credential_layout.setAlignment(Qt.AlignTop)
+        main_layout.addWidget(credential_frame, 1, 1, first_row, 2) 
+
+        # Credentials Weight
+        credential_weight_frame = QFrame(self)
+        credential_weight_frame.setStyleSheet(f"QFrame {{background-color: {BACKGROUND_COLOR}; border: 2px solid {ORANGE_COLOR}; padding: 0px;}};")
+        credential_weight_layout = QGridLayout()
+        credential_weight_frame.setLayout(credential_weight_layout)
+        credential_weight_layout.setSpacing(0)
+        credential_weight_layout.setContentsMargins(0,0,0,0)
+        credential_weight_layout.setAlignment(Qt.AlignTop)
+        main_layout.addWidget(credential_weight_frame, 1, 3, first_row, 1) 
+        
+        # Images
+        image_frame = QFrame(self)
+        image_frame.setStyleSheet(f"QFrame {{background-color: {BACKGROUND_COLOR}; border: 2px solid {ORANGE_COLOR}; padding: 0;}};")
+        image_layout = QGridLayout()
+        image_frame.setLayout(image_layout)
+        image_layout.setSpacing(0)
+        image_layout.setContentsMargins(0,0,0,0)
+        #image_layout.setAlignment(Qt.AlignTop)
+        main_layout.addWidget(image_frame, 1, 4, first_row, 1) 
+
+        # Images Weight
+        images_weight_frame = QFrame(self)
+        images_weight_frame.setStyleSheet(f"QFrame {{background-color: {BACKGROUND_COLOR}; border: 2px solid {ORANGE_COLOR}; padding: 0px;}};")
+        images_weight_layout = QGridLayout()
+        images_weight_frame.setLayout(images_weight_layout)
+        images_weight_layout.setSpacing(0)
+        images_weight_layout.setContentsMargins(0,0,0,0)
+        #images_weight_layout.setAlignment(Qt.AlignTop)
+        main_layout.addWidget(images_weight_frame, 1, 5, first_row, 1) 
+
+        # Submit
+        submit_frame = QFrame(self)
+        submit_frame.setStyleSheet(f"QFrame {{background-color: {BACKGROUND_COLOR}; border: 2px solid {ORANGE_COLOR}; padding: 100px;}};")
+        submit_layout = QVBoxLayout()
+        submit_frame.setLayout(submit_layout)
+        main_layout.addWidget(submit_frame, 1, 6, first_row, 2) 
+
+        
+        self.credential_labels = ["Name:", "Birth:", "Phone:", "Address:", "Home:"]
+        self.credential_textfields = [["First", "Mid", "Last"], ["D", "M", "Y"], ["", "", ""], ["Street", "City", "Aprt"], ["Town"]]
+        self.result_filter_checkboxes = []
+        self.credential_entries = []
+        self.credential_weights = []
+
+        grid_layout = QGridLayout()
+        grid_layout.setHorizontalSpacing(15)
+        grid_layout.setVerticalSpacing(1)
+        grid_layout.setContentsMargins(0, 10, 20, 0)
+
+        # Credentials
+        font = QFont("Sitka Heading Semibold")
+        for i, label_text in enumerate(self.credential_labels):
+            label = QLabel(label_text)
+            label.setStyleSheet(f"color: {TEXT_COLOR}; font-size: 32px; border: 0px solid {ORANGE_COLOR}; padding: 5px;")
+            label.setMaximumHeight(40)  # Set maximum height to 40 pixels
+            label.setFont(font)
+            label.setAlignment(Qt.AlignVCenter)
+            grid_layout.addWidget(label, i, 0, 1, 1, Qt.AlignVCenter)
+
+            for j, text_text in enumerate(self.credential_textfields[i]):
+                entry = QLineEdit()
+                entry.setPlaceholderText(text_text)
+                entry.setStyleSheet(f"background-color: {HIGHLIGHT_COLOR}; color: {TEXT_COLOR}; border-radius: 0px; padding: 5px;")
+                if len(self.credential_textfields[i]) < 3:
+                    grid_layout.addWidget(entry, i, j+1, 1, 2)
+                else:
+                    grid_layout.addWidget(entry, i, j+1)
+                self.credential_entries.append(entry)
+
+            checkbox = QCheckBox()
+            checkbox.setStyleSheet("color: #ffffff;")
+            checkbox.stateChanged.connect(self.apply_filters)
+            self.result_filter_checkboxes.append(checkbox)
+            grid_layout.addWidget(checkbox, i, 5)
+
+        label = QLabel("Credentials")
+        label.setStyleSheet(f"color: {TEXT_COLOR}; font-size: 40px; border-bottom: 4px solid {ORANGE_COLOR}; padding: 5px;")
+        label.setFont(font)
+        label.setMaximumHeight(100)
+
+        credential_layout.addWidget(label, 1, 1, 1, 1)
+        credential_layout.addLayout(grid_layout, 2, 1, 4, 1)
+
+        # Set the stretch factor to make sure the rows are fixed at 40 pixels height
+        for i in range(len(self.credential_labels)):
+            grid_layout.setRowStretch(i, 1)
+            grid_layout.setRowMinimumHeight(i, 60)
+
+
+
+        grid_layout2 = QGridLayout()
+        grid_layout2.setHorizontalSpacing(15)
+        grid_layout2.setVerticalSpacing(1)
+        grid_layout2.setContentsMargins(40,0,40,0)
+
+        # Credentials Weight
+        font = QFont("Sitka Heading Semibold")
+        for i, label_text in enumerate(self.credential_labels):
+            weight_scale = QSlider(Qt.Horizontal)
+            weight_scale.setRange(1, 10)
+            weight_scale.setStyleSheet(f"background-color: {HIGHLIGHT_COLOR}; color: {TEXT_COLOR}; padding: 5px;")
+            weight_scale.setStyleSheet(f"QSlider::handle:horizontal {{background-color: {ORANGE_COLOR};}}")
+            weight_scale.setMaximumWidth(99900)
+            weight_scale.setMinimumHeight(20)
+            weight_scale.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)  # Set size policy to Fixed
+            grid_layout2.addWidget(weight_scale, i, 1)
+            self.credential_weights.append(weight_scale)
+        label = QLabel("Weight")
+        label.setStyleSheet(f"color: {TEXT_COLOR}; font-size: 40px; border-bottom: 4px solid {ORANGE_COLOR}; padding: 5px;")
+        label.setFont(font)
+        label.setMaximumHeight(100)
+        credential_weight_layout.addWidget(label, 1,1,1,1)
+        credential_weight_layout.addLayout(grid_layout2, 2,1,4,1)
+
+        # Set the stretch factor to make sure the rows are fixed at 40 pixels height
+        for i in range(len(self.credential_labels)):
+            grid_layout2.setRowStretch(i, 1)
+            grid_layout2.setRowMinimumHeight(i, 60)
+
+        # Image
+        grid_layout3 = QGridLayout()
+        grid_layout3.setVerticalSpacing(0)
+        grid_layout3.setContentsMargins(40,0,40,30)
+
+        label = QLabel("Images")
+        label.setStyleSheet(f"color: {TEXT_COLOR}; font-size: 40px; border-bottom: 4px solid {ORANGE_COLOR}; padding: 5px;")
+        label.setFont(font)
+        label.setMaximumHeight(100)
+
+        # Image uploader setup
+        self.image_uploader = ImageUploader(self)
+        #self.image_uploader.setFixedSize(200, 200)  # Set the fixed size as required
+        self.image_uploader.setMinimumHeight(240)
+        grid_layout3.addWidget(self.image_uploader, 2, 1, 2, 1)
+        
+        remove_button = QPushButton("Remove Image")
+        remove_button.setStyleSheet(f"background-color: {ORANGE_COLOR}; color: {TEXT_COLOR}; border-radius: 5px; padding: 10px;")
+        #remove_button.setFixedSize(500, 50)  # Set the fixed size as required
+        remove_button.clicked.connect(lambda: self.image_uploader.clear())  # Connect the clicked signal to clear the image uploader
+        grid_layout3.addWidget(remove_button, 4, 1, 1, 1)  # Adjust the row according to your layout
+
+        image_layout.addWidget(label, 1,1,1,1, Qt.AlignTop)
+        image_layout.addLayout(grid_layout3, 2,1,4,1, Qt.AlignVCenter)
+
+
+        #Image Weight
+        grid_layout4 = QGridLayout()
+        #grid_layout4.setHorizontalSpacing(15)
+        #grid_layout4.setVerticalSpacing(40)
+        grid_layout4.setContentsMargins(40,0,40,0)
+        #grid_layout4.setAlignment(Qt.AlignBottom)  
+        font = QFont("Sitka Heading Semibold")
+        self.weight_scale_uploader = QSlider(Qt.Horizontal)
+        self.weight_scale_uploader.setRange(1, 10)
+        self.weight_scale_uploader.setStyleSheet(f"background-color: {HIGHLIGHT_COLOR}; color: {TEXT_COLOR}; padding: 5px;")
+        self.weight_scale_uploader.setStyleSheet(f"QSlider::handle:horizontal {{background-color: {ORANGE_COLOR};}}")
+        self.weight_scale_uploader.setMaximumWidth(99900)
+        self.weight_scale_uploader.setMinimumHeight(20)
+        self.weight_scale_uploader.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed) 
+        grid_layout4.addWidget(self.weight_scale_uploader, 2,1)
+        label = QLabel("Weight")
+        label.setStyleSheet(f"color: {TEXT_COLOR}; font-size: 40px; border-bottom: 4px solid {ORANGE_COLOR}; padding: 5px;")
+        label.setFont(font)
+        label.setMaximumHeight(100)
+        images_weight_layout.addWidget(label, 1,1,1,1, Qt.AlignTop)
+        images_weight_layout.addLayout(grid_layout4, 2,1,4,1, Qt.AlignVCenter)
+
+        #Submit
+        self.submit_button = QPushButton("Submit")
+        button_size = 200  # Adjust the size as needed
+        self.submit_button.setFixedSize(button_size, button_size)
+        self.submit_button.setStyleSheet(f"background-color: {ORANGE_COLOR}; color: {TEXT_COLOR}; border-radius: 100px; padding: 0px;")
+        self.submit_button.clicked.connect(self.submit_credentials)
+        submit_layout.addWidget(self.submit_button, 1)
+        submit_layout.setAlignment(Qt.AlignHCenter)
+        #submit_layout.setContentsMargins(0,100,0,100)
+
+
+        """
         # Search frame
         search_frame = QFrame(self)
         search_frame.setStyleSheet(f"QFrame {{background-color: {BACKGROUND_COLOR}; border: 2px solid {ORANGE_COLOR}; padding: 20px;}};")
@@ -105,11 +296,7 @@ class WebCrawlerApp(QWidget):
         search_frame.setLayout(search_layout)
         main_layout.addWidget(search_frame, 1, 5) 
 
-        # RANDOM IMAGE
-        random_image = RandomImageGenerator()
-        #random_image.setFixedSize(600, 500)
-        main_layout.addWidget(random_image, 1, 1)
-
+     
         # First row containing search type and advanced search link
         search_type_layout = QHBoxLayout()
         search_layout.addLayout(search_type_layout)
@@ -325,35 +512,67 @@ class WebCrawlerApp(QWidget):
 
         filter_results_layout.addLayout(text_box_layout,2)
 
+        """
+
         # Result frame for results table
         results_frame = QFrame(self)
         results_frame.setStyleSheet(f"background-color: {BACKGROUND_COLOR};")
         results_frame.setStyleSheet(f"QFrame {{border: 2px solid {ORANGE_COLOR}; padding: 15px;}};")
         results_layout = QVBoxLayout()
         results_frame.setLayout(results_layout)
-        main_layout.addWidget(results_frame, 4,5)
+        main_layout.addWidget(results_frame, first_row+2,1,16,7)
+
+        # Result Search thing
+        filter_frame = QFrame(self)
+        filter_frame.setStyleSheet(f"background-color: {BACKGROUND_COLOR};")
+        filter_frame.setStyleSheet(f"QFrame {{border: 2px solid {ORANGE_COLOR}; padding: 0px;}};")
+        filter_search_layout = QHBoxLayout()
+        filter_search_layout.setAlignment(Qt.AlignLeft)
+        filter_frame.setLayout(filter_search_layout)
+        main_layout.addWidget(filter_frame, first_row+1,1,1,5)
+
+        filter_search_label = QLabel("Filter Search:")
+        filter_search_label.setStyleSheet(f"color: {ORANGE_COLOR}; font-size: 32px; border: 0px solid {ORANGE_COLOR};")
+        filter_search_label.setMaximumWidth(400)
+        filter_search_label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)  # Set size policy to Minimum for
+        filter_search_layout.addWidget(filter_search_label, 1, Qt.AlignLeft)
 
         # Horizontal layout for search bar and match count label
-        result_search_layout = QHBoxLayout()
-
         self.result_search_bar = QLineEdit()
         self.result_search_bar.setPlaceholderText("Search by URL...")
         self.result_search_bar.setStyleSheet(f"background-color: {HIGHLIGHT_COLOR}; color: {TEXT_COLOR}; font-size: 32px; border-radius: 10px; padding: 20px;")
         self.result_search_bar.textChanged.connect(self.apply_filters)
-        result_search_layout.addWidget(self.result_search_bar)
+        self.result_search_bar.setFixedWidth(1300)
+        filter_search_layout.addWidget(self.result_search_bar, 20, Qt.AlignLeft)
+        
+        # Result thing by
+        filter_by_frame = QFrame(self)
+        filter_by_frame.setStyleSheet(f"background-color: {BACKGROUND_COLOR}; border: 2px solid {ORANGE_COLOR}; padding: 0px;")
+        filter_search_by_layout = QHBoxLayout()
+        filter_search_by_layout.setAlignment(Qt.AlignCenter)  # Align the layout to the center
+        filter_by_frame.setLayout(filter_search_by_layout)
+        main_layout.addWidget(filter_by_frame, first_row + 1, 6, 1, 2)
 
-        self.match_count_label = QLabel("0 Matches Found")
-        self.match_count_label.setStyleSheet(f"color: {ORANGE_COLOR}; font-size: 32px; border: 0px solid {ORANGE_COLOR};")
-        result_search_layout.addWidget(self.match_count_label)
+        filter_by_label = QLabel("Filter By:")
+        filter_by_label.setStyleSheet(f"color: {ORANGE_COLOR}; font-size: 32px; border: 0px solid {ORANGE_COLOR}; padding: 5px;")
+        filter_by_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Align the label to the right and vertically centered
+        filter_search_by_layout.addWidget(filter_by_label)
 
-        results_layout.addLayout(result_search_layout)
+        filter_combo_box = QComboBox()
+        filter_combo_box.setStyleSheet(f"color: {TEXT_COLOR}; font-size: 32px; border: 2px solid {ORANGE_COLOR}; padding: 5px;")
+        filter_combo_box.addItems(["Relevance"])
+        for label in self.credential_labels:
+            filter_combo_box.addItem(label.split(":")[0])
+        filter_combo_box.setFixedWidth(400)
+        filter_search_by_layout.addWidget(filter_combo_box, alignment=Qt.AlignLeft | Qt.AlignVCenter)  # Align the combo box to the left and vertically centered
+
 
         font = QFont("Sitka Heading Semibold")
         self.results_table = QTableWidget()
-        self.results_table.setColumnCount(6)
-        self.results_table.setHorizontalHeaderLabels(["URL", "First Name", "Last Name", "Address", "Phone Number", "Relevance"])
+        self.results_table.setColumnCount(2)
+        self.results_table.setHorizontalHeaderLabels(["URL", "Info"])
         # Set the width for each column
-        column_widths = [600, 200, 200, 300, 400, 200]  # Example widths for each column
+        column_widths = [1000,2200]  # Example widths for each column
         for i, width in enumerate(column_widths):
             self.results_table.setColumnWidth(i, width)
 
@@ -375,11 +594,12 @@ class WebCrawlerApp(QWidget):
         self.timer.timeout.connect(self.update_ui)
         self.timer.start(1000)
 
-        self.toggle_search_all()
-        self.update_ai_text(utils.get_random_fact())
+        #self.toggle_search_all()
+        #self.update_ai_text(utils.get_random_fact())
         
     def update_ai_text(self, new_text):
-        self.ai_text_box.setText("<p style='line-height: 150%;'>"+new_text+"</p>")   
+        print("hi")
+        #self.ai_text_box.setText("<p style='line-height: 150%;'>"+new_text+"</p>")   
 
     # Function to toggle select all checkboxes
     def toggle_search_all(self):
@@ -400,6 +620,7 @@ class WebCrawlerApp(QWidget):
 
     def submit_credentials(self):
         db.clear_database()
+        """
         if (self.advanced_search_box.isVisible()):
             inputs = [entry.text() for entry in self.credential_entries]
             weights = [scale.value() for scale in self.credential_weights]
@@ -416,13 +637,24 @@ class WebCrawlerApp(QWidget):
                 weights.append(0)
             inputs.append(b'')
             weights.append(0)
+        """
+        inputs = []
+        weights = []
+        inputs = [entry.text() for entry in self.credential_entries]
+        weights = [scale.value() for scale in self.credential_weights]
+        inputs.append(utils.pixmap_to_png_bytes(self.image_uploader.pixmap()))
+        weights.append(self.weight_scale_uploader.value())
+        #[["First", "Mid", "Last"], ["D", "M", "Y"], ["", "", ""], ["Street", "City", "Aprt"], ["Town"]]
         
         search_query = sea.Search(inputs, weights)    
-
+        """
         for i in range(5):
             if self.search_filter_checkboxes[i].isChecked():
                 self.searching_flag = True
                 threading.Thread(target=self.crawl_web, args=(i,), kwargs={'search_query': search_query}).start()
+        """
+        threading.Thread(target=self.crawl_web, args=(0,), kwargs={'search_query': search_query}).start()
+        threading.Thread(target=self.crawl_web, args=(1,), kwargs={'search_query': search_query}).start()
 
     def apply_filters(self):
         search_text = self.result_search_bar.text().lower()
@@ -444,7 +676,7 @@ class WebCrawlerApp(QWidget):
             if show_row:
                 match_count += 1
         
-        self.match_count_label.setText(f"{match_count} Matches Found")
+        #self.match_count_label.setText(f"{match_count} Matches Found")
 
 
     def stop_searching(self):
@@ -471,13 +703,24 @@ class WebCrawlerApp(QWidget):
         self.results_table.setRowCount(len(documents))
         rows = []
         for doc in documents:
-            row = [str(value) for value in doc]
+            combined_value = f"{doc[1]} - {doc[2]}"
+            row = [doc[0], combined_value]
             rows.append(row)
 
-        self.results_table.setHorizontalHeaderLabels(["URL", "First Name", "Last Name", "Address", "Phone Number", "Relevance"])
+        self.results_table.setHorizontalHeaderLabels(["URL", "Info"])
         for row_position, row_data in enumerate(rows):
             for column_position, value in enumerate(row_data):
-                item = QTableWidgetItem(value)
-                self.results_table.setItem(row_position, column_position, item)
-        
+                if column_position == 1:  # Column where you want the scroll feature
+                    text_edit = QTextEdit(value)
+                    text_edit.setStyleSheet("border: none;") 
+                    text_edit.setReadOnly(True)
+                    text_edit.setLineWrapMode(QTextEdit.WidgetWidth)
+                    text_edit.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+                    item = QTableWidgetItem()
+                    self.results_table.setItem(row_position, column_position, item)
+                    self.results_table.setCellWidget(row_position, column_position, text_edit)
+                else:
+                    item = QTableWidgetItem(value)
+                    self.results_table.setItem(row_position, column_position, item)
+
         self.apply_filters()
