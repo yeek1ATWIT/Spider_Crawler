@@ -2,18 +2,37 @@ from ui import WebCrawlerApp
 from PyQt5.QtWidgets import QApplication
 import sys
 from database import init_db, clear_database
-
+import scrapy
+from scrapy.crawler import CrawlerProcess
+from scrapy.spiders import CrawlSpider, Rule
+from scrapy.linkextractors import LinkExtractor
 """
 TODO
 Run this one. This File.
 """
+
+
 def main():
+#Run UI
     init_db()
     clear_database()
     app = QApplication(sys.argv)
     ex = WebCrawlerApp()
     ex.show()
     sys.exit(app.exec_())
+
+#run spider--------------------------------------------------------------------------------!
+process = CrawlerProcess(settings={
+        "FEEDS": {
+            "items.json": {"format": "json"},
+        },
+    })
+
+process.crawl(CrawlSpider)
+process.start()
+#end of spider Running---------------------------------------------------------------------!
+
+#collect data from spider and create an array
 
 if __name__ == '__main__':
     main()
