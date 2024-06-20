@@ -9,3 +9,5 @@ pip install urllib3
 pip install httpx
 pip install httpx[http2]
 pip install scrapy
+pip install regex
+pip install os-sys
