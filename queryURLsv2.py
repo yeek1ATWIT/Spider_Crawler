@@ -1,32 +1,14 @@
 import os
-import shutil
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.common.keys import Keys
-import time
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from bs4 import BeautifulSoup
 import requests
-import difflib
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from sumy.parsers.plaintext import PlaintextParser
-from sumy.nlp.tokenizers import Tokenizer
-from sumy.summarizers.lsa import LsaSummarizer
-import nltk
-from textblob import TextBlob
-from langdetect import detect
+from concurrent.futures import ThreadPoolExecutor
+#import nltk
 import re
 import search
 import concurrent.futures
-from concurrent.futures import ThreadPoolExecutor
 import database as db
 
-nltk.download('punkt')
+#nltk.download('punkt')
 
 def fetch_response(url):
     headers = {
