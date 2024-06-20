@@ -9,6 +9,12 @@ from urllib.parse import urlparse
 import time
 import httpx
 import database as db
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
+import queryURLsv2 as queryURLs
 
 class Person:
     def __init__(self, first_name, last_name):
@@ -34,14 +40,18 @@ class Search:
         self.first_name = SearchEntry(input[0], weight[0])
         self.middle_name = SearchEntry(input[1], weight[0])
         self.last_name = SearchEntry(input[2], weight[0])
-        self.birthday = SearchEntry(input[3]+input[4]+input[5], weight[1])
+        self.birthday = SearchEntry(input[3]+" "+input[4]+" "+input[5], weight[1])
         self.phone_number = SearchEntry(input[6]+input[7]+input[8], weight[2])
-        self.address = SearchEntry(input[9]+input[10]+input[11], weight[3])
-        self.home = SearchEntry(input[12], weight[4])
+        self.street = SearchEntry(input[9], weight[3])
+        self.city = SearchEntry(input[10], weight[3])
+        self.state = SearchEntry(input[11], weight[3])
+        self.zipcode = SearchEntry(input[12], weight[4])
         self.picture = SearchEntry(input[13], weight[5])
 
     def get_all_entries(self):
         return [attr for attr in self.__dict__.values()]
+    
+    
 
 """
 TODO
@@ -178,7 +188,102 @@ class SearchType1:
                 seen_domains.add(domain)
                 unique.append(url)
         return unique
+    
+    def fill_and_submit_form(url, search):
+        # Set up the WebDriver (make sure you have the appropriate driver installed and in your PATH)
+        driver = webdriver.Chrome()
 
+        try:
+            # Navigate to the URL
+            driver.get(url)
+
+            # Wait for the page to load
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
+
+            # Get the page source
+            html = driver.page_source
+            soup = BeautifulSoup(html, 'html.parser')
+
+            # Define potential input field identifiers
+            input_identifiers = {
+                'first_name': ['first_name', 'firstname', 'First Name', 'FirstName'],
+                'middle_name': ['middle_name', 'middlename', 'Middle Name', 'MiddleName'],
+                'last_name': ['last_name', 'lastname', 'Last Name', 'LastName'],
+                'address': ['address', 'Address'],
+                'city': ['city', 'City'],
+                'state': ['state', 'State'],
+                'zipcode': ['zipcode', 'Zipcode', 'zip_code', 'Zip Code', 'Postal Code', 'postal_code']
+            }
+
+            # Find and fill input fields
+            def find_and_fill_input(field, value):
+                for identifier in input_identifiers[field]:
+                    try:
+                        input_element = driver.find_element(By.NAME, identifier)
+                        input_element.send_keys(value)
+                        return True
+                    except NoSuchElementException:
+                        try:
+                            input_element = driver.find_element(By.ID, identifier)
+                            input_element.send_keys(value)
+                            return True
+                        except NoSuchElementException:
+                            try:
+                                input_element = driver.find_element(By.CSS_SELECTOR, f"[title='{identifier}']")
+                                input_element.send_keys(value)
+                                return True
+                            except NoSuchElementException:
+                                try:
+                                    input_element = driver.find_element(By.CSS_SELECTOR, f"[placeholder='{identifier}']")
+                                    input_element.send_keys(value)
+                                    return True
+                                except NoSuchElementException:
+                                    continue
+                print("false")
+                return False
+
+            # Fill out the form fields
+            find_and_fill_input('first_name', search.first_name.value)
+            find_and_fill_input('last_name', search.last_name.value)
+            find_and_fill_input('address', search.address.value)
+            find_and_fill_input('city', search.address.value.split(" ")[1])
+
+            # Find the submit button and click it
+            submit_button_identifiers = ['submit', 'enter', 'search', 'go', 'search now', 'Search now']
+
+            def find_and_click_button():
+                for identifier in submit_button_identifiers:
+                    try:
+                        button = driver.find_element(By.NAME, identifier)
+                        button.click()
+                        return True
+                    except NoSuchElementException:
+                        try:
+                            button = driver.find_element(By.ID, identifier)
+                            button.click()
+                            return True
+                        except NoSuchElementException:
+                            try:
+                                button = driver.find_element(By.XPATH, "//button[@type='submit' and contains(@class, 'btn-primary') and contains(@class, 'btn-custom') and contains(@class, 'btn-block')]")
+                                button.click()
+                                return True
+                            except NoSuchElementException:
+                                continue
+                return False
+
+            if not find_and_click_button():
+                raise Exception('Submit button not found')
+
+            # Wait for the next page to load and get the new URL
+            time.sleep(1) 
+            new_url = driver.current_url
+
+            print(f"New URL: {new_url}")
+
+        finally:
+            # Close the browser
+            driver.quit()
+            
     def search_bing(query, page=1):
         if page == 1:
             url = f"https://www.bing.com/search?q={query}&PC=U316&FORM=CHROMN"
@@ -225,12 +330,22 @@ class SearchType1:
         return results
 
     def search(self, search_query):
-        try:
+        
+        documents = queryURLs.query(search_query)
+        """
+        for document in documents:
+            #document.info = document.info.replace('\n', '<br>')
+            document.info = SearchType1.highlight_names(document.info, search_query.first_name.value, search_query.last_name.value)
+            db.save_document_to_db(document)
+        return
+        """
+        """
+        #try:
             inputs = []
             weights = []
             query_values = search_query.get_all_entries()
 
-            for i in range(7):
+            for i in range(9):
                 inputs.append(query_values[i].value)
                 weights.append(query_values[i].weight if query_values[i].value else 0)
         
@@ -248,6 +363,8 @@ class SearchType1:
                     index = random.randint(index, min(index+2, len(search_results)))
                     search_results.insert(index, item)
             '''
+            SearchType1.fill_and_submit_form("https://www.privateeye.com/", search_query)
+
             search_results = SearchType1.search_all_engines(' '.join(inputs))
             with ThreadPoolExecutor(max_workers=5) as executor:  # Adjust max_workers as needed
                 futures = [executor.submit(SearchType1.process_url, url, inputs, weights) for url in search_results]
@@ -259,8 +376,9 @@ class SearchType1:
             if not self.searching_flag:
                 return
             #'''
-        except:
-            print(f"An error occurred while threading SearchType1")
+        #except:
+         #   print(f"An error occurred while threading SearchType1")
+"""
 
 class SearchType2:
     def search(self, search_query):

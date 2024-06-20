@@ -1,10 +1,10 @@
 import requests
 import threading
-from PyQt5.QtWidgets import QWidget, QTextEdit, QComboBox, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QSlider, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QFrame, QGridLayout, QCheckBox
-from PyQt5.QtCore import Qt, QTimer, QLoggingCategory
+from PyQt5.QtWidgets import QWidget, QAbstractItemView, QTextEdit, QComboBox, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QSlider, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QFrame, QGridLayout, QCheckBox, QCompleter
+from PyQt5.QtCore import Qt, QRegularExpression, QTimer, QLoggingCategory
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QFileDialog, QLabel,QScrollArea
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QIntValidator, QRegularExpressionValidator
 from PyQt5.QtWidgets import QLabel, QVBoxLayout, QSizePolicy
 from PyQt5.QtGui import QPixmap
 import requests
@@ -148,8 +148,8 @@ class WebCrawlerApp(QWidget):
         main_layout.addWidget(submit_frame, 1, 6, first_row, 2) 
 
         
-        self.credential_labels = ["Name:", "Birth:", "Phone:", "Address:", "Home:"]
-        self.credential_textfields = [["First", "Mid", "Last"], ["D", "M", "Y"], ["", "", ""], ["Street", "City", "Aprt"], ["Town"]]
+        self.credential_labels = ["Name:", "Birth:", "Phone:", "Address:", "Zipcode:"]
+        self.credential_textfields = [["First", "Mid", "Last"], ["D", "M", "Y"], ["", "", ""], ["Street", "City", "State"], ["Zipcode"]]
         self.result_filter_checkboxes = []
         self.credential_entries = []
         self.credential_weights = []
@@ -159,11 +159,37 @@ class WebCrawlerApp(QWidget):
         grid_layout.setVerticalSpacing(1)
         grid_layout.setContentsMargins(0, 10, 20, 0)
 
+        # Validators
+        name_validator = QRegularExpressionValidator(QRegularExpression("[A-Za-z ]+"))
+        birthday_validator = QRegularExpressionValidator(QRegularExpression(r"\d{0,2}"))
+        birthyear_validator = QRegularExpressionValidator(QRegularExpression(r"\d{0,4}"))
+        phone_validator = QRegularExpressionValidator(QRegularExpression(r"\d{0,3}"))
+        phone_base_validator = QRegularExpressionValidator(QRegularExpression(r"\d{0,4}"))
+        address_validator = QRegularExpressionValidator(QRegularExpression("[A-Za-z0-9 ,.-]+"))
+        zipcode_validator = QRegularExpressionValidator(QRegularExpression(r"\d{0,5}"))
+
+        # List of states and their abbreviations
+        states = ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida",
+                  "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland",
+                  "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire",
+                  "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania",
+                  "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington",
+                  "West Virginia", "Wisconsin", "Wyoming"]
+
+        state_abbreviations = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA",
+                               "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK",
+                               "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
+
+        # Create a completer with both states and abbreviations
+        state_completer = QCompleter(states + state_abbreviations)
+        state_completer.setCaseSensitivity(Qt.CaseInsensitive)
+        state_completer.setFilterMode(Qt.MatchContains)
+        
         # Credentials
         font = QFont("Sitka Heading Semibold")
         for i, label_text in enumerate(self.credential_labels):
             label = QLabel(label_text)
-            label.setStyleSheet(f"color: {TEXT_COLOR}; font-size: 32px; border: 0px solid {ORANGE_COLOR}; padding: 5px;")
+            label.setStyleSheet(f"color: {TEXT_COLOR}; font-size: 32px; border: 0px solid {ORANGE_COLOR}; padding-left: 10px;")
             label.setMaximumHeight(40)  # Set maximum height to 40 pixels
             label.setFont(font)
             label.setAlignment(Qt.AlignVCenter)
@@ -173,8 +199,31 @@ class WebCrawlerApp(QWidget):
                 entry = QLineEdit()
                 entry.setPlaceholderText(text_text)
                 entry.setStyleSheet(f"background-color: {HIGHLIGHT_COLOR}; color: {TEXT_COLOR}; border-radius: 0px; padding: 5px;")
+                
+                if text_text == "State":
+                    entry.setPlaceholderText("State")
+                    # Set the completer to the state text field
+                    entry.setCompleter(state_completer)
+
+                # Apply validators
+                if label_text == "Name:":
+                    entry.setValidator(name_validator)
+                elif label_text == "Birth:" and j < 2:
+                    entry.setValidator(birthday_validator)
+                elif label_text == "Birth:" and j == 2:
+                    entry.setValidator(birthyear_validator)
+                elif label_text == "Phone:" and j < 2:
+                    entry.setValidator(phone_validator)
+                elif label_text == "Phone:" and j == 2:
+                    entry.setValidator(phone_base_validator)
+                elif label_text == "Address:":
+                    entry.setValidator(address_validator)
+                elif label_text == "Zipcode:":
+                    entry.setValidator(zipcode_validator)
+
                 if len(self.credential_textfields[i]) < 3:
-                    grid_layout.addWidget(entry, i, j+1, 1, 2)
+                    # Zipcode textfield
+                    grid_layout.addWidget(entry, i, j+1, 1, 1)
                 else:
                     grid_layout.addWidget(entry, i, j+1)
                 self.credential_entries.append(entry)
@@ -558,14 +607,15 @@ class WebCrawlerApp(QWidget):
         filter_by_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Align the label to the right and vertically centered
         filter_search_by_layout.addWidget(filter_by_label)
 
-        filter_combo_box = QComboBox()
-        filter_combo_box.setStyleSheet(f"color: {TEXT_COLOR}; font-size: 32px; border: 2px solid {ORANGE_COLOR}; padding: 5px;")
-        filter_combo_box.addItems(["Relevance"])
+        self.filter_combo_box = QComboBox()
+        self.filter_combo_box.setStyleSheet(f"color: {TEXT_COLOR}; font-size: 32px; border: 2px solid {ORANGE_COLOR}; padding: 5px;")
+        self.filter_combo_box.addItems(["Relevance"])
         for label in self.credential_labels:
-            filter_combo_box.addItem(label.split(":")[0])
-        filter_combo_box.setFixedWidth(400)
-        filter_search_by_layout.addWidget(filter_combo_box, alignment=Qt.AlignLeft | Qt.AlignVCenter)  # Align the combo box to the left and vertically centered
+            self.filter_combo_box.addItem(label.split(":")[0])
+        self.filter_combo_box.setFixedWidth(400)
+        filter_search_by_layout.addWidget(self.filter_combo_box, alignment=Qt.AlignLeft | Qt.AlignVCenter)  # Align the combo box to the left and vertically centered
 
+        self.scroll_positions = {}  # Dictionary to store scroll positions
 
         font = QFont("Sitka Heading Semibold")
         self.results_table = QTableWidget()
@@ -586,9 +636,16 @@ class WebCrawlerApp(QWidget):
 
         #self.results_table.setStyleSheet(f"QHeaderView::section {{ background-color: {ORANGE_COLOR}; color: {TEXT_COLOR}; }} ")
         self.results_table.setStyleSheet(f"border: 2px solid {HIGHLIGHT_COLOR}; padding: 0px;")
+        self.results_table.verticalHeader().setDefaultSectionSize(400)
 
         header.setSectionResizeMode(QHeaderView.Interactive)  # Set resize mode to Interactive
         results_layout.addWidget(self.results_table)
+
+        # smoothness
+        self.results_table.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.results_table.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
+
+        
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_ui)
@@ -664,7 +721,7 @@ class WebCrawlerApp(QWidget):
             url_item = self.results_table.item(row, 0)
             if url_item is None or search_text not in url_item.text().lower():
                 show_row = False
-
+            #self.filter_combo_box.currentText()
             for col, checkbox in enumerate(self.result_filter_checkboxes):
                 if checkbox.isChecked():
                     item = self.results_table.item(row, col + 1)  # Skip URL column
@@ -700,6 +757,12 @@ class WebCrawlerApp(QWidget):
     def update_ui(self):
         documents = db.fetch_documents_from_db()
 
+        # Save the current scroll positions
+        for row in range(self.results_table.rowCount()):
+            text_edit = self.results_table.cellWidget(row, 1)
+            if text_edit:
+                self.scroll_positions[row] = text_edit.verticalScrollBar().value()
+
         self.results_table.setRowCount(len(documents))
         rows = []
         for doc in documents:
@@ -710,8 +773,9 @@ class WebCrawlerApp(QWidget):
         self.results_table.setHorizontalHeaderLabels(["URL", "Info"])
         for row_position, row_data in enumerate(rows):
             for column_position, value in enumerate(row_data):
-                if column_position == 1:  # Column where you want the scroll feature
-                    text_edit = QTextEdit(value)
+                if column_position == 1:  
+                    text_edit = QTextEdit()
+                    text_edit.setHtml(value.replace('\n', '<br>'))
                     text_edit.setStyleSheet("border: none;") 
                     text_edit.setReadOnly(True)
                     text_edit.setLineWrapMode(QTextEdit.WidgetWidth)
@@ -719,8 +783,12 @@ class WebCrawlerApp(QWidget):
                     item = QTableWidgetItem()
                     self.results_table.setItem(row_position, column_position, item)
                     self.results_table.setCellWidget(row_position, column_position, text_edit)
+                    if row_position in self.scroll_positions:
+                        text_edit.verticalScrollBar().setValue(self.scroll_positions[row_position])
+
                 else:
                     item = QTableWidgetItem(value)
                     self.results_table.setItem(row_position, column_position, item)
-
+        
+        self.scroll_positions.clear() 
         self.apply_filters()
