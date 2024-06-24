@@ -5,6 +5,7 @@ from database import init_db, clear_database
 import scrapy
 from scrapy.crawler import CrawlerProcess
 from scrapy.spiders import CrawlSpider, Rule
+from spid.spid.spiders.crawling_spider import CrawlingSpider
 from scrapy.linkextractors import LinkExtractor
 """
 TODO
@@ -28,11 +29,14 @@ process = CrawlerProcess(settings={
         },
     })
 
-process.crawl(CrawlSpider)
-process.start()
+#process.crawl(CrawlSpider)
+#process.start()
 #end of spider Running---------------------------------------------------------------------!
 
-#collect data from spider and create an array
+###
+#process.crawl(CrawlingSpider, fullname="Hello", hometown="Michael")
+#process.start()
 
 if __name__ == '__main__':
     main()
+    print("moo")

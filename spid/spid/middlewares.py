@@ -24,7 +24,7 @@ class SpidSpiderMiddleware:
     def process_spider_input(self, response, spider):
         # Called for each response that goes through the spider
         # middleware and into the spider.
-
+        
         # Should return None or raise an exception.
         return None
 
@@ -47,7 +47,7 @@ class SpidSpiderMiddleware:
         # Called with the start requests of the spider, and works
         # similarly to the process_spider_output() method, except
         # that it doesn’t have a response associated.
-
+        
         # Must return only requests (not items).
         for r in start_requests:
             yield r
@@ -72,7 +72,7 @@ class SpidDownloaderMiddleware:
     def process_request(self, request, spider):
         # Called for each request that goes through the downloader
         # middleware.
-
+        
         # Must either:
         # - return None: continue processing this request
         # - or return a Response object
@@ -84,7 +84,7 @@ class SpidDownloaderMiddleware:
 
     def process_response(self, request, response, spider):
         # Called with the response returned from the downloader.
-
+        
         # Must either;
         # - return a Response object
         # - return a Request object

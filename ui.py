@@ -711,7 +711,7 @@ class WebCrawlerApp(QWidget):
                 threading.Thread(target=self.crawl_web, args=(i,), kwargs={'search_query': search_query}).start()
         """
         threading.Thread(target=self.crawl_web, args=(0,), kwargs={'search_query': search_query}).start()
-        threading.Thread(target=self.crawl_web, args=(1,), kwargs={'search_query': search_query}).start()
+        #threading.Thread(target=self.crawl_web, args=(1,), kwargs={'search_query': search_query}).start()
 
     def apply_filters(self):
         search_text = self.result_search_bar.text().lower()

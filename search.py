@@ -15,6 +15,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 import queryURLsv2 as queryURLs
+from scrapy.crawler import CrawlerProcess
+from scrapy.spiders import CrawlSpider, Rule
+from spid.spid.spiders.crawling_spider import CrawlingSpider
+from scrapy.linkextractors import LinkExtractor
+import spid.spid.settings as settings_module
 
 class Person:
     def __init__(self, first_name, last_name):
@@ -74,9 +79,15 @@ command "self.update_ai_text("Insert thing here")".
 Do whatever- especially with this file.
 """
 class SearchType0:
-    def search(self, search_query):
-        print("SearchType0 Activated!\n")
-        self.update_ai_text("HI!")
+    def search(self, search_query2):
+        # Convert the settings module to a dictionary
+        settings = {attr: getattr(settings_module, attr) for attr in dir(settings_module) if not attr.startswith("__")}
+
+        process = CrawlerProcess(settings)
+        process.crawl(CrawlingSpider, search_query=search_query2)
+        process.start()
+        #print("SearchType0 Activated!\n")
+        #self.update_ai_text("HI!")
 
 class SearchType1:
     def calculate_relevance(document_text, inputs, weights):
