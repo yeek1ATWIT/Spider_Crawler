@@ -7,7 +7,7 @@ import database as db
 class CrawlingSpider(CrawlSpider):
     name = "spidey"
     #allowed_domains = ["whitepages.com", 'privateeye.com', '.com']
-
+    PROXY_SERVER = "38.154.227.167:5868:fqzoadia:tbr2g5705loa"
     def __init__(self, search_query=None, *args, **kwargs):
         self.search_query = search_query
         self.start_urls = []
