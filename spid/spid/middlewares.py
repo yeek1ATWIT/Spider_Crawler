@@ -79,7 +79,7 @@ class SpidDownloaderMiddleware:
         # - or return a Request object
         # - or raise IgnoreRequest: process_exception() methods of
         #   installed downloader middleware will be called
-        request.meta['proxy'] = "38.154.227.167:5868:fqzoadia:tbr2g5705loa"
+       
         return None
 
     def process_response(self, request, response, spider):

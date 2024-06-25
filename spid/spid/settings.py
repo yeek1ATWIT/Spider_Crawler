@@ -9,7 +9,7 @@
 
 BOT_NAME = "spid"
 
-##SPIDER_MODULES = ["spid.spiders"]
+#SPIDER_MODULES = ["spid.spiders"]
 ##NEWSPIDER_MODULE = "spid.spiders"
 DEPTH_LIMIT = 1
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
@@ -44,15 +44,17 @@ DEPTH_LIMIT = 1
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 #SPIDER_MIDDLEWARES = {
-#    "spid.middlewares.SpidSpiderMiddleware": 543,
+ #   "spid.middlewares.SpidSpiderMiddleware": 543,
 #}
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-    'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 1,
-    'spid.middlewares.SpidDownloaderMiddleware': 543,
+    #'spid.middlewares.SpidDownloaderMiddleware': 543,
+    'rotating_proxies.middlewares.RotatingProxyMiddleware': 610,
+    'rotating_proxies.middlewares.BanDetectionMiddleware': 620,
 }
+
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
@@ -91,3 +93,15 @@ DOWNLOADER_MIDDLEWARES = {
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
+ROTATING_PROXY_LIST = [
+    '38.154.227.167:5868:fqzoadia:tbr2g5705loa',
+    '185.199.229.156:7492:fqzoadia:tbr2g5705loa',
+    '185.199.228.220:7300:fqzoadia:tbr2g5705loa',
+    '185.199.231.45:8382:fqzoadia:tbr2g5705loa',
+    '188.74.210.207:6286:fqzoadia:tbr2g5705loa',
+    '188.74.183.10:8279:fqzoadia:tbr2g5705loa',
+    '188.74.210.21:6100:fqzoadia:tbr2g5705loa',
+    '45.155.68.129:8133:fqzoadia:tbr2g5705loa',
+    '154.95.36.199:6893:fqzoadia:tbr2g5705loa',
+    '45.94.47.66:8110:fqzoadia:tbr2g5705loa',
+]
