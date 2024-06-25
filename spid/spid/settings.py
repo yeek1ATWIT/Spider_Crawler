@@ -51,9 +51,12 @@ DEPTH_LIMIT = 1
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
     #'spid.middlewares.SpidDownloaderMiddleware': 543,
-    'rotating_proxies.middlewares.RotatingProxyMiddleware': 610,
-    'rotating_proxies.middlewares.BanDetectionMiddleware': 620,
+    # 'rotating_proxies.middlewares.RotatingProxyMiddleware': 610,
+    # 'rotating_proxies.middlewares.BanDetectionMiddleware': 620,
+    "spid.spid.middlewares.MyProxyMiddleware": 350, 
+    'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 400, 
 }
+
 
 
 # Enable or disable extensions
@@ -93,15 +96,27 @@ DOWNLOADER_MIDDLEWARES = {
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
-ROTATING_PROXY_LIST = [
-    '38.154.227.167:5868:fqzoadia:tbr2g5705loa',
-    '185.199.229.156:7492:fqzoadia:tbr2g5705loa',
-    '185.199.228.220:7300:fqzoadia:tbr2g5705loa',
-    '185.199.231.45:8382:fqzoadia:tbr2g5705loa',
-    '188.74.210.207:6286:fqzoadia:tbr2g5705loa',
-    '188.74.183.10:8279:fqzoadia:tbr2g5705loa',
-    '188.74.210.21:6100:fqzoadia:tbr2g5705loa',
-    '45.155.68.129:8133:fqzoadia:tbr2g5705loa',
-    '154.95.36.199:6893:fqzoadia:tbr2g5705loa',
-    '45.94.47.66:8110:fqzoadia:tbr2g5705loa',
-]
+
+
+PROXY_USER = "fqzoadia-rotate"
+PROXY_PASSWORD = 'tbr2g5705loa'
+PROXY_ENDPOINT = 'p.webshare.io'
+PROXY_PORT = '80'
+
+
+
+
+
+# ROTATING_PROXY_LIST = [
+#     '38.154.227.167:5868',
+#     '185.199.229.156:7492',
+#     '185.199.228.220:7300',
+#     '185.199.231.45:8382',
+#     '188.74.210.207:6286',
+#     '188.74.183.10:8279',
+#     '188.74.210.21:6100',
+#     '45.155.68.129:8133',
+#     '154.95.36.199:6893',
+#     '45.94.47.66:8110',
+# ]
+
