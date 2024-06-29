@@ -11,3 +11,5 @@ pip install httpx[http2]
 pip install scrapy
 pip install regex
 pip install os-sys
+pip install playwright
+playwright install     
