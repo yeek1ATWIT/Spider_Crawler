@@ -21,5 +21,8 @@ class SpidItem(scrapy.Item):
     city = scrapy.Field()
     aprt = scrapy.Field()
     hometown = scrapy.Field()
+    relative =  scrapy.Field()
+    details =  scrapy.Field()
+    postcode = scrapy.Field()
     
     pass

@@ -9,6 +9,11 @@
 
 BOT_NAME = "spid"
 
+#output to rawdata.json
+FEEDS = {
+    'rawdata.json' : {'format' : 'json'},
+}
+
 #SPIDER_MODULES = ["spid.spiders"]
 ##NEWSPIDER_MODULE = "spid.spiders"
 DEPTH_LIMIT = 1
@@ -24,7 +29,7 @@ DEPTH_LIMIT = 1
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 3 #3 second delay
+DOWNLOAD_DELAY = 5 #5 second delay
 AUTOTHROTTLE_ENABLED = True #Automatic Throttle 
 # The download delay setting will honor only one of:
 #CONCURRENT_REQUESTS_PER_DOMAIN = 16

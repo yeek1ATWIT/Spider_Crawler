@@ -13,3 +13,4 @@ pip install regex
 pip install os-sys
 pip install playwright
 playwright install     
+pip install mysql mysql-connector-python
