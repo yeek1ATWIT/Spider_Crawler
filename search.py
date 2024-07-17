@@ -82,10 +82,9 @@ class SearchType0:
     def search(self, search_query2):
         # Convert the settings module to a dictionary
         settings = {attr: getattr(settings_module, attr) for attr in dir(settings_module) if not attr.startswith("__")}
-
-        process = CrawlerProcess(settings)
-        process.crawl(CrawlingSpider, search_query=search_query2)
-        process.start()
+        from main import run_spider
+        run_spider(settings,search_query2)
+        
         #print("SearchType0 Activated!\n")
         #self.update_ai_text("HI!")
 

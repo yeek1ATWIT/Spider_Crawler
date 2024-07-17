@@ -28,6 +28,12 @@ process = CrawlerProcess(settings={
             "items.json": {"format": "json",},
         },
     })
+    
+def run_spider(settings,search_query2):
+    process = CrawlerProcess(settings)
+    process.crawl(CrawlingSpider, search_query=search_query2)
+    process.start()
+
 
 #process.crawl(CrawlSpider)
 #process.start()
@@ -40,4 +46,4 @@ process = CrawlerProcess(settings={
 if __name__ == '__main__':
     main()
     print("moo")
-   
+        
