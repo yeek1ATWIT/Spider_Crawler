@@ -8,14 +8,13 @@
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 BOT_NAME = "spid"
-ALLOWED_DOMAINS = ['whoseno.com']
 
 #output to rawdata.json
 FEEDS = {
     'rawdata.json' : {'format' : 'json'},
 }
-FEED_FORMAT = 'json'  # or 'csv' or 'xml' based on your preference
-FEED_URI = 'rawdata.json'  # or 'output.csv' or 'output.xml'
+# FEED_FORMAT = 'json'  # or 'csv' or 'xml' based on your preference
+# FEED_URI = 'rawdata.json'  # or 'output.csv' or 'output.xml'
 
 #SPIDER_MODULES = ["spid.spiders"]
 #NEWSPIDER_MODULE = "spid.spiders"

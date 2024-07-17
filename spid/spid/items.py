@@ -12,5 +12,4 @@ class SpidItem(scrapy.Item):
     name = scrapy.Field()
     phone = scrapy.Field()
     url = scrapy.Field()
-    
-    pass
+

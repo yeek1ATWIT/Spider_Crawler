@@ -5,11 +5,11 @@ import queryURLsv2 as query
 import search
 from spid.spid.items import SpidItem as db
 from spid.spid.items import SpidItem
-
+import logging
 class CrawlingSpider(Spider):
     name = "spidey"
-    allowed_domains = ['whoseno.com/US']
-    start_urls = ['https://www.whoseno.com/US/']
+    allowed_domains = ['whoseno.com']
+    #start_urls = ['https://www.whoseno.com/US/']
     custom_settings = {
         'FEEDS': {
             'rawdata.json': {'format': 'json', 'overwrite': True},
@@ -30,7 +30,12 @@ class CrawlingSpider(Spider):
         self.rules = [
             Rule(LinkExtractor(allow=()), callback='parse_item', follow=True),
         ]
-        
+        #self._compile_rules() 
+
+    def parse(self, response):
+        """ Default parse method required by Scrapy """
+        pass  # This method is intentionally left empty as it's required by scrapy
+
     def parse_item(self, response):
         document = search.Document(response.url)
         document.info = query.highlight_names2(query.extract_text_from_html2(document.url, self.search_query))
@@ -39,34 +44,17 @@ class CrawlingSpider(Spider):
         if document.info:
             db.save_document_to_db(document)
         
+        self.logger.info(f"Parsing {response.url}")
+        self.logger.info(f"Name: {response.css('b::text').get()}")
+        self.logger.info(f"Phone: {response.css('h1::text').get()}")
+
         # Splitting yields for each website
         spid_item = SpidItem()
 
-        spid_item['url'] = response.url,
-        spid_item['name'] = response.css('b').get(),
-        spid_item['phone'] = response.css('h1').get(),
-        
-        yield SpidItem
 
-# Code Graveyard
-# address = response.css("div.addressline-1").get()
-# relative = response.css("div.size-aware-h5.fw-m.primary--text").get()
-# firstName = response.css("div.addressline-1").get()
-# middleName = response.css("div.addressline-1").get()
-# lastName = response.css("div.addressline-1").get()
-# birthDay = response.css("div.addressline-1").get()
-# birthMonth = response.css("div.addressline-1").get()
-# birthYear = response.css("div.addressline-1").get()
-# phone = response.css("div.addressline-1").get()
-# age = response.css("div.addressline-1").get()
-# street = response.css("div.addressline-1").get()
-# city = response.css("div.addressline-1").get()
-# aprt = response.css("div.addressline-1").get()
-# hometown = response.css("div.addressline-1").get()
-# relative =  response.css("div.addressline-1").get()
-#
-# yield {
-#     "url": response.url,
-#     "address": address,
-#     "relative": relative,
-# }
+        spid_item['url'] = response.url
+        spid_item['name'] = response.css('b::text').get()
+        spid_item['phone'] = response.css('h1::text').get()
+
+        yield spid_item
+
