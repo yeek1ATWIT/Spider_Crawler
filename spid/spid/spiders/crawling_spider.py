@@ -13,7 +13,8 @@ class CrawlingSpider(Spider):
     custom_settings = {
         'FEEDS': {
             'rawdata.json': {'format': 'json', 'overwrite': True},
-        }
+        },
+        'ROBOTSTXT_OBEY': False 
     }
 
     def __init__(self, search_query=None, *args, **kwargs):
@@ -39,7 +40,8 @@ class CrawlingSpider(Spider):
     def parse_item(self, response):
         document = search.Document(response.url)
         document.info = query.highlight_names2(query.extract_text_from_html2(document.url, self.search_query))
-        query.updateRelevance(self.search_query, document)
+        #query.updateRelevance(self.search_query, document)
+        document.info = "sasasasasasasasasasa"
         
         if document.info:
             db.save_document_to_db(document)
@@ -48,13 +50,17 @@ class CrawlingSpider(Spider):
         self.logger.info(f"Name: {response.css('b::text').get()}")
         self.logger.info(f"Phone: {response.css('h1::text').get()}")
 
-        # Splitting yields for each website
+        name = response.css('b::text').get()
+        phone = response.css('h1::text').get()
+
+        # Handling potential None values from CSS selectors
+        name = name.strip() if name else None
+        phone = phone.strip() if phone else None
+
+        # Creating and yielding item
         spid_item = SpidItem()
-
-
         spid_item['url'] = response.url
-        spid_item['name'] = response.css('b::text').get()
-        spid_item['phone'] = response.css('h1::text').get()
+        spid_item['name'] = name
+        spid_item['phone'] = phone
 
         yield spid_item
-

@@ -105,7 +105,7 @@ class SpidDownloaderMiddleware:
         spider.logger.info("Spider opened: %s" % spider.name)
 
 class MyProxyMiddleware(object):
-
+#updated
     @classmethod
     def from_crawler(cls, crawler):
         return cls(crawler.settings)
