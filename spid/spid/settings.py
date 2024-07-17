@@ -8,14 +8,17 @@
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 BOT_NAME = "spid"
+ALLOWED_DOMAINS = ['whoseno.com']
 
 #output to rawdata.json
 FEEDS = {
     'rawdata.json' : {'format' : 'json'},
 }
+FEED_FORMAT = 'json'  # or 'csv' or 'xml' based on your preference
+FEED_URI = 'rawdata.json'  # or 'output.csv' or 'output.xml'
 
 #SPIDER_MODULES = ["spid.spiders"]
-##NEWSPIDER_MODULE = "spid.spiders"
+#NEWSPIDER_MODULE = "spid.spiders"
 DEPTH_LIMIT = 1
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = "spid (+http://www.yourdomain.com)"
@@ -29,7 +32,7 @@ DEPTH_LIMIT = 1
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 5 #5 second delay
+DOWNLOAD_DELAY = 2 #2 second delay
 AUTOTHROTTLE_ENABLED = True #Automatic Throttle 
 # The download delay setting will honor only one of:
 #CONCURRENT_REQUESTS_PER_DOMAIN = 16
@@ -61,6 +64,7 @@ DOWNLOADER_MIDDLEWARES = {
     # 'rotating_proxies.middlewares.BanDetectionMiddleware': 620,
     "spid.spid.middlewares.MyProxyMiddleware": 350, 
     'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 400, 
+    'scrapy.downloadermiddlewares.offsite.OffsiteMiddleware': None,
 }
 
 
@@ -97,7 +101,7 @@ DOWNLOADER_MIDDLEWARES = {
 #HTTPCACHE_DIR = "httpcache"
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
-
+HTTPERROR_ALLOWED_CODES = [301,302]
 # Set settings whose default value is deprecated to a future-proof value
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"

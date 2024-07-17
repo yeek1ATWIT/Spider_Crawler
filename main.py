@@ -25,7 +25,7 @@ def main():
 #run spider--------------------------------------------------------------------------------!
 process = CrawlerProcess(settings={
         "FEEDS": {
-            "items.json": {"format": "json", 'overwrite': True},
+            "items.json": {"format": "json",},
         },
     })
 
