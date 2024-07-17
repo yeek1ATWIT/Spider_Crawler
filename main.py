@@ -12,7 +12,6 @@ TODO
 Run this one. This File.
 """
 
-
 def main():
 #Run UI
     init_db()

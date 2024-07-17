@@ -1,17 +1,21 @@
 import requests
 import threading
 from PyQt5.QtWidgets import QWidget, QAbstractItemView, QTextEdit, QComboBox, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QSlider, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QFrame, QGridLayout, QCheckBox, QCompleter
-from PyQt5.QtCore import Qt, QRegularExpression, QTimer, QLoggingCategory
+from PyQt5.QtCore import Qt, QStringListModel, QRegularExpression, QTimer, QLoggingCategory
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QFileDialog, QLabel,QScrollArea
-from PyQt5.QtGui import QPixmap, QIntValidator, QRegularExpressionValidator
+from PyQt5.QtGui import QPixmap, QValidator, QIntValidator, QRegularExpressionValidator
 from PyQt5.QtWidgets import QLabel, QVBoxLayout, QSizePolicy
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QPalette, QColor
 import requests
 import time
 import utils
 import search as sea
 import database as db
+import csv
+from collections import defaultdict
+import sys
+import asyncio
 
 # Define colors
 BACKGROUND_COLOR = "#1e1e1e"
@@ -81,16 +85,42 @@ class RandomImageGenerator(QLabel):
         if event.button() == Qt.LeftButton:
             self.generate_random_image()
 
+def getAddressCSV():
+    state_to_cities = defaultdict(lambda: {'code': '', 'cities': set()})
+    city_to_states = defaultdict(list)
+
+    with open('csv/kelvins/us_cities.csv', newline='', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            state_name = row['STATE_NAME']
+            state_code = row['STATE_CODE']
+            city = row['CITY']
+
+            state_to_cities[state_name]['code'] = state_code
+            state_to_cities[state_name]['cities'].add(city)
+            city_to_states[city].append((state_name, state_code))
+
+    states = list(state_to_cities.keys())
+    state_codes = [info['code'] for info in state_to_cities.values()]
+    cities = list(city_to_states.keys())
+
+    state_to_cities = {state: {'code': info['code'], 'cities': list(info['cities'])} for state, info in state_to_cities.items()}
+
+    return states, state_codes, cities, state_to_cities, city_to_states
 
 class WebCrawlerApp(QWidget):
+    states, state_codes, cities, state_to_cities, city_to_states = getAddressCSV()
+    sys.argv += ['-platform', 'windows:darkmode=2']
+
     def __init__(self):
         super().__init__()
-        self.searching_flag = False
         self.init_ui()
 
     def init_ui(self):
-        self.setWindowTitle("Web Crawler Prototype")
+        
+        self.setWindowTitle("Web Crawler")
         self.setStyleSheet(f"background-color: {BACKGROUND_COLOR}; color: {TEXT_COLOR};")
+        
         self.setGeometry(100, 100, 2800, 1600)  # Set initial window size (x, y, width, height)
 
         main_layout = QGridLayout()
@@ -168,23 +198,50 @@ class WebCrawlerApp(QWidget):
         address_validator = QRegularExpressionValidator(QRegularExpression("[A-Za-z0-9 ,.-]+"))
         zipcode_validator = QRegularExpressionValidator(QRegularExpression(r"\d{0,5}"))
 
-        # List of states and their abbreviations
-        states = ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida",
-                  "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland",
-                  "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire",
-                  "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania",
-                  "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington",
-                  "West Virginia", "Wisconsin", "Wyoming"]
-
-        state_abbreviations = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA",
-                               "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK",
-                               "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
-
-        # Create a completer with both states and abbreviations
-        state_completer = QCompleter(states + state_abbreviations)
-        state_completer.setCaseSensitivity(Qt.CaseInsensitive)
-        state_completer.setFilterMode(Qt.MatchContains)
+   
         
+        # Create a completer with both states and abbreviations
+        state_completer = QCompleter(self.states + self.state_codes)
+        state_completer.setCaseSensitivity(Qt.CaseInsensitive)
+        state_completer.setFilterMode(Qt.MatchStartsWith)
+        completer_popup = state_completer.popup()
+        completer_popup.setStyleSheet(f"background-color: {HIGHLIGHT_COLOR}; color: {TEXT_COLOR}; font-size: 32px; border: 0px solid {ORANGE_COLOR}; padding: 2px;")
+        completer_popup.verticalScrollBar().setStyleSheet("QScrollBar::handle:vertical {"
+                         "    max-height: 5px;" 
+                         "}"
+                         "QScrollBar:vertical {"
+                         "    border: none;"
+                         "    max-width: 10px;"  
+                         "}"
+                         "QScrollBar::handle:vertical {"
+                         f"    color: {ORANGE_COLOR}"
+                         "    border: none;"  
+                         "}"
+                         "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {"
+                         "    border: none;"      
+                         "}")
+        
+        # Create a completer with both states and abbreviations
+        city_completer = QCompleter(self.cities)
+        city_completer.setCaseSensitivity(Qt.CaseInsensitive)
+        city_completer.setFilterMode(Qt.MatchStartsWith)
+        completer_popup = city_completer.popup()
+        completer_popup.setStyleSheet(f"background-color: {HIGHLIGHT_COLOR}; color: {TEXT_COLOR}; font-size: 32px; border: 0px solid {ORANGE_COLOR}; padding: 2px;")
+        completer_popup.verticalScrollBar().setStyleSheet("QScrollBar::handle:vertical {"
+                         "    max-height: 5px;" 
+                         "}"
+                         "QScrollBar:vertical {"
+                         "    border: none;"
+                         "    max-width: 10px;"  
+                         "}"
+                         "QScrollBar::handle:vertical {"
+                         f"    color: {ORANGE_COLOR}"
+                         "    border: none;"  
+                         "}"
+                         "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {"
+                         "    border: none;"      
+                         "}")
+
         # Credentials
         font = QFont("Sitka Heading Semibold")
         for i, label_text in enumerate(self.credential_labels):
@@ -204,9 +261,16 @@ class WebCrawlerApp(QWidget):
                     entry.setPlaceholderText("State")
                     # Set the completer to the state text field
                     entry.setCompleter(state_completer)
+                    self.state_entry = entry
+                elif text_text == "City":
+                    ## TODO Enter your Code Here:
+                    entry.setPlaceholderText("City")
+                    entry.setCompleter(city_completer)
+                    self.city_entry = entry
+
 
                 # Apply validators
-                if label_text == "Name:":
+                elif label_text == "Name:":
                     entry.setValidator(name_validator)
                 elif label_text == "Birth:" and j < 2:
                     entry.setValidator(birthday_validator)
@@ -234,6 +298,16 @@ class WebCrawlerApp(QWidget):
             self.result_filter_checkboxes.append(checkbox)
             grid_layout.addWidget(checkbox, i, 5)
 
+        # Event handlers
+        self.state_entry.textChanged.connect(self.update_city_completer)
+        self.city_entry.textChanged.connect(self.update_state_completer)
+        
+        # Connect editingFinished signal for state_entry
+        self.state_entry.editingFinished.connect(self.autocompleteState)
+
+        # Connect editingFinished signal for city_entry
+        self.city_entry.editingFinished.connect(self.autocompleteCity)
+
         label = QLabel("Credentials")
         label.setStyleSheet(f"color: {TEXT_COLOR}; font-size: 40px; border-bottom: 4px solid {ORANGE_COLOR}; padding: 5px;")
         label.setFont(font)
@@ -246,8 +320,6 @@ class WebCrawlerApp(QWidget):
         for i in range(len(self.credential_labels)):
             grid_layout.setRowStretch(i, 1)
             grid_layout.setRowMinimumHeight(i, 60)
-
-
 
         grid_layout2 = QGridLayout()
         grid_layout2.setHorizontalSpacing(15)
@@ -612,6 +684,7 @@ class WebCrawlerApp(QWidget):
         self.filter_combo_box.addItems(["Relevance"])
         for label in self.credential_labels:
             self.filter_combo_box.addItem(label.split(":")[0])
+        self.filter_combo_box.addItem("Picture")
         self.filter_combo_box.setFixedWidth(400)
         filter_search_by_layout.addWidget(self.filter_combo_box, alignment=Qt.AlignLeft | Qt.AlignVCenter)  # Align the combo box to the left and vertically centered
 
@@ -619,10 +692,10 @@ class WebCrawlerApp(QWidget):
 
         font = QFont("Sitka Heading Semibold")
         self.results_table = QTableWidget()
-        self.results_table.setColumnCount(2)
-        self.results_table.setHorizontalHeaderLabels(["URL", "Info"])
+        self.results_table.setColumnCount(9)
+        self.results_table.setHorizontalHeaderLabels(["URL", "Info", "Relevance_score", "Name_relevance_score", "Birthday_relevance_score"," Phone_relevance_score", "Address_relevance_score", "Zipcode_relevance_score", "Picture_relevance_score"])
         # Set the width for each column
-        column_widths = [1000,2200]  # Example widths for each column
+        column_widths = [1000,2200,1,1,1,1,1,1,1]  # Example widths for each column
         for i, width in enumerate(column_widths):
             self.results_table.setColumnWidth(i, width)
 
@@ -645,15 +718,82 @@ class WebCrawlerApp(QWidget):
         self.results_table.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
         self.results_table.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
 
-        
+        #Hide
+        """
+        self.results_table.setColumnHidden(2, True)
+        self.results_table.setColumnHidden(3, True)
+        self.results_table.setColumnHidden(4, True)
+        self.results_table.setColumnHidden(5, True)
+        self.results_table.setColumnHidden(6, True)
+        self.results_table.setColumnHidden(7, True)
+        """
+
+        # Initial state of filters
+        self.last_search_text = self.result_search_bar.text()
+        self.last_filter_states = [checkbox.isChecked() for checkbox in self.result_filter_checkboxes]
+        self.last_db_mtime = db.get_db_mtime()
+        self.last_filter_combo_box = self.filter_combo_box.currentIndex()
 
         self.timer = QTimer()
-        self.timer.timeout.connect(self.update_ui)
+        self.timer.timeout.connect(self.check_for_updates)
         self.timer.start(1000)
 
         #self.toggle_search_all()
         #self.update_ai_text(utils.get_random_fact())
-        
+    
+    def autocompleteState(self):
+        text = self.state_entry.text().strip()
+        if text:
+            completer = self.state_entry.completer()
+            if completer.popup().isVisible():
+                current_completion = completer.currentCompletion()
+                if current_completion:
+                    self.state_entry.setText(current_completion)
+
+    def autocompleteCity(self):
+        text = self.city_entry.text().strip()
+        if text:
+            completer = self.city_entry.completer()
+            if completer.popup().isVisible():
+                current_completion = completer.currentCompletion()
+                if current_completion:
+                    self.city_entry.setText(current_completion)
+
+    # Function to get the state name and code for a given city
+    def get_states_for_city(self, city):
+        return self.city_to_states.get(city, [(None, None)])
+
+    # Function to get the list of cities and state code for a given state
+    def get_cities_for_state(self, state):
+        state_info = self.state_to_cities.get(state, {"code": None, "cities": []})
+        return state_info['code'], state_info['cities']
+    
+    def update_city_completer(self, text):
+        # Check if the input text matches any state name or state code
+        valid_state = None
+        for state in self.states:
+            if text.lower() == state.lower() or text.lower() == self.state_to_cities[state]['code'].lower():
+                valid_state = state
+                break
+
+        if valid_state:
+            state_code, cities = self.get_cities_for_state(valid_state)
+            self.city_entry.completer().setModel(QStringListModel(cities))
+        else:
+            self.city_entry.completer().setModel(QStringListModel(self.cities))
+
+    def update_state_completer(self, text):
+        # Get all possible states and codes for the given city text
+        possible_states = self.get_states_for_city(text)
+        state_names = [state[0] for state in possible_states]
+        state_codes = [state[1] for state in possible_states]
+
+        if possible_states:
+            self.state_entry.completer().setModel(QStringListModel(state_names + state_codes))
+        else:
+            self.state_entry.completer().setModel(QStringListModel(self.states + self.state_codes))
+
+
     def update_ai_text(self, new_text):
         print("hi")
         #self.ai_text_box.setText("<p style='line-height: 150%;'>"+new_text+"</p>")   
@@ -710,9 +850,10 @@ class WebCrawlerApp(QWidget):
                 self.searching_flag = True
                 threading.Thread(target=self.crawl_web, args=(i,), kwargs={'search_query': search_query}).start()
         """
+        #threading.Thread(target=self.crawl_web, args=(0,), kwargs={'search_query': search_query}).start()
         threading.Thread(target=self.crawl_web, args=(0,), kwargs={'search_query': search_query}).start()
-        #threading.Thread(target=self.crawl_web, args=(1,), kwargs={'search_query': search_query}).start()
-
+        #self.crawl_web(1, kwargs={'search_query': search_query})
+        
     def apply_filters(self):
         search_text = self.result_search_bar.text().lower()
         match_count = 0
@@ -724,22 +865,20 @@ class WebCrawlerApp(QWidget):
             #self.filter_combo_box.currentText()
             for col, checkbox in enumerate(self.result_filter_checkboxes):
                 if checkbox.isChecked():
-                    item = self.results_table.item(row, col + 1)  # Skip URL column
-                    if item is None or item.text() == "":
+                    item = self.results_table.item(row, col + 3)  # Skip URL column
+                    if item is None or int(item.text()) == 0:
                         show_row = False
                         break
 
             self.results_table.setRowHidden(row, not show_row)
             if show_row:
                 match_count += 1
+                
+            sort = self.filter_combo_box.currentIndex() + 2
+            self.results_table.sortItems(sort, Qt.DescendingOrder)
         
         #self.match_count_label.setText(f"{match_count} Matches Found")
 
-
-    def stop_searching(self):
-        self.searching_flag = False
-        self.update_ai_text(utils.get_random_fact())
-    
     def crawl_web(self, search_type, **kwargs):
         search_query = kwargs.get('search_query')
 
@@ -754,6 +893,26 @@ class WebCrawlerApp(QWidget):
         if (search_type == 4):
             sea.SearchType4.search(self, search_query)
 
+    def check_for_updates(self):
+        current_db_mtime = db.get_db_mtime()
+        current_search_text = self.result_search_bar.text()
+        current_filter_states = [checkbox.isChecked() for checkbox in self.result_filter_checkboxes]
+        current_filter_combo_box = self.filter_combo_box.currentIndex()
+        margin_of_relief = 5
+        # Check if the database modification time or filters have changed
+        if (abs(current_db_mtime - self.last_db_mtime) > margin_of_relief or 
+            current_search_text != self.last_search_text or 
+            current_filter_combo_box != self.last_filter_combo_box or
+            current_filter_states != self.last_filter_states):
+            
+            self.update_ui()
+            
+            # Update the last known states
+            self.last_db_mtime = current_db_mtime
+            self.last_search_text = current_search_text
+            self.last_filter_states = current_filter_states
+            self.last_filter_combo_box = current_filter_combo_box
+    
     def update_ui(self):
         documents = db.fetch_documents_from_db()
 
@@ -766,8 +925,8 @@ class WebCrawlerApp(QWidget):
         self.results_table.setRowCount(len(documents))
         rows = []
         for doc in documents:
-            combined_value = f"{doc[1]} - {doc[2]}"
-            row = [doc[0], combined_value]
+            #combined_value = f"{doc[1]} - {doc[2]}"
+            row = [doc[0], doc[1], doc[2], doc[3], doc[4], doc[5], doc[6], doc[7], doc[8]]
             rows.append(row)
 
         self.results_table.setHorizontalHeaderLabels(["URL", "Info"])
