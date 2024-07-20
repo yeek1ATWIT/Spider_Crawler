@@ -14,12 +14,13 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
-import queryURLsv2 as queryURLs
+import queryURLsv3 as queryURLs
 from scrapy.crawler import CrawlerProcess
 from scrapy.spiders import CrawlSpider, Rule
 from spid.spid.spiders.crawling_spider import CrawlingSpider
 from scrapy.linkextractors import LinkExtractor
 import spid.spid.settings as settings_module
+
 
 class Person:
     def __init__(self, first_name, last_name):
@@ -33,6 +34,12 @@ class Document:
     def __init__(self, url):
         self.url = url
         self.info = ''
+        self.name_relevance_score = 0
+        self.birthday_relevance_score = 0
+        self.phone_relevance_score = 0
+        self.address_relevance_score = 0
+        self.zipcode_relevance_score = 0
+        self.picture_relevance_score = 0
         self.relevance_score = 0
 
 class SearchEntry:
@@ -45,7 +52,7 @@ class Search:
         self.first_name = SearchEntry(input[0], weight[0])
         self.middle_name = SearchEntry(input[1], weight[0])
         self.last_name = SearchEntry(input[2], weight[0])
-        self.birthday = SearchEntry(input[3]+" "+input[4]+" "+input[5], weight[1])
+        self.birthday = SearchEntry(input[3]+"-"+input[4]+"-"+input[5], weight[1])
         self.phone_number = SearchEntry(input[6]+input[7]+input[8], weight[2])
         self.street = SearchEntry(input[9], weight[3])
         self.city = SearchEntry(input[10], weight[3])
@@ -55,6 +62,10 @@ class Search:
 
     def get_all_entries(self):
         return [attr for attr in self.__dict__.values()]
+    
+    def get_all_entries_except_picture(self):
+        return [attr for name, attr in self.__dict__.items() if name != 'picture']
+
     
     
 
@@ -340,7 +351,17 @@ class SearchType1:
         return results
 
     def search(self, search_query):
+        """
+        # Create an event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         
+        # Run the async query function in the event loop
+        try:
+            loop.run_until_complete(queryURLs.query(search_query))
+        finally:
+            loop.close()
+        """
         documents = queryURLs.query(search_query)
         """
         for document in documents:
