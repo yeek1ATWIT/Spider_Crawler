@@ -4,7 +4,7 @@
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 from scrapy import signals
-
+import base64
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
 
