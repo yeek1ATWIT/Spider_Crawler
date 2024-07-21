@@ -1,4 +1,4 @@
-from scrapy.spiders import CrawlSpider, Rule
+from scrapy.spiders import Spider, Rule
 from scrapy.linkextractors import LinkExtractor
 import queryURLsv3 as query
 import search
@@ -6,8 +6,10 @@ import database as db
 from bs4 import BeautifulSoup
 import json
 
-class CrawlingSpider(CrawlSpider):
+class CrawlingSpider(Spider):
+
     name = "spidey"
+
     #allowed_domains = ["whitepages.com", 'privateeye.com', '.com']
     
     def __init__(self, search_query=None, *args, **kwargs):
@@ -29,14 +31,15 @@ class CrawlingSpider(CrawlSpider):
             for url in urls:
                 self.start_urls.append(f"{url}")
         #----------------------------------------------#
-
+        """
         # Setting rules dynamically based on the provided search query
         self.rules = (
-            Rule(LinkExtractor(allow=()), callback='parse_item', follow=True),
+            Rule(LinkExtractor(allow=()), callback='parse', follow=True),
         )
         
         super(CrawlingSpider, self).__init__(*args, **kwargs)
         self._compile_rules()
+        """
         self.already_done = False
 
     def update_relevance_score(self, search_query, document, picture_in_document=False):
@@ -106,7 +109,7 @@ class CrawlingSpider(CrawlSpider):
             "div", "section", "article", "header", "footer", "aside",
             "ul", "ol", "li",
             "table", "tr", "td", "th",
-            "a",
+            "a", "td", "tr"
             "dl", "dt", "dd",
             "address", "figure", "figcaption"
         ]
@@ -141,7 +144,7 @@ class CrawlingSpider(CrawlSpider):
         
         return None
         
-    def parse_item(self, response):
+    def parse(self, response):
         document = search.Document(response.url)
         document.info = query.highlight_names2(query.extract_text_from_html2(document.url, self.search_query))
         #query.updateRelevance(self.search_query, document)
@@ -204,7 +207,7 @@ class CrawlingSpider(CrawlSpider):
             g.write(result)
             g.close() 
             
-        elif any(stur in s for s in urls):
+        elif any(stur in s for s in urls) and not self.already_done:
             f = open("hardcodedOutput.txt", "w")
             f.write(document.info.replace("<br>", "\n"))
             f.close()
