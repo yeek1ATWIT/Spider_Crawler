@@ -278,7 +278,7 @@ def get_queries(search_query):
         queries.append(phone_format(phone_number))
     
     if search_query.street.value:
-        queries.append(search_query.phone.value)
+        queries.append(search_query.phone_number.value)
 
     if search_query.city.value:
         queries.append(search_query.city.value)
