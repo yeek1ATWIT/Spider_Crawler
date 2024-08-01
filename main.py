@@ -1,3 +1,14 @@
+import sys
+import asyncio
+from twisted.internet import asyncioreactor
+
+# Use SelectorEventLoop on Windows
+if sys.platform == 'win32':
+    policy = asyncio.WindowsSelectorEventLoopPolicy()
+    asyncio.set_event_loop_policy(policy)
+
+asyncioreactor.install()
+
 from ui import WebCrawlerApp
 from PyQt5.QtWidgets import QApplication
 import sys

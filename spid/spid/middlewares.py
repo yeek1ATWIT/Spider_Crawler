@@ -4,6 +4,7 @@
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 from scrapy import signals
+import base64
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
@@ -103,3 +104,22 @@ class SpidDownloaderMiddleware:
 
     def spider_opened(self, spider):
         spider.logger.info("Spider opened: %s" % spider.name)
+    
+class MyProxyMiddleware(object):
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler.settings)
+
+    def __init__(self, settings):
+        self.user = settings.get('PROXY_USER')
+        self.password = settings.get('PROXY_PASSWORD')
+        self.endpoint = settings.get('PROXY_ENDPOINT')
+        self.port = settings.get('PROXY_PORT')
+
+    def process_request(self, request, spider):
+        user_credentials = '{user}:{passw}'.format(user=self.user, passw=self.password)
+        basic_authentication = 'Basic ' + base64.b64encode(user_credentials.encode()).decode()
+        host = 'http://{endpoint}:{port}'.format(endpoint=self.endpoint, port=self.port)
+        request.meta['proxy'] = host
+        request.headers['Proxy-Authorization'] = basic_authentication

@@ -16,6 +16,7 @@ import csv
 from collections import defaultdict
 import sys
 import asyncio
+import multiprocessing
 
 # Define colors
 BACKGROUND_COLOR = "#1e1e1e"
@@ -117,7 +118,7 @@ class WebCrawlerApp(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        
+        self.SearchType0 = sea.SearchType0()
         self.setWindowTitle("Web Crawler")
         self.setStyleSheet(f"background-color: {BACKGROUND_COLOR}; color: {TEXT_COLOR};")
         
@@ -850,9 +851,8 @@ class WebCrawlerApp(QWidget):
                 self.searching_flag = True
                 threading.Thread(target=self.crawl_web, args=(i,), kwargs={'search_query': search_query}).start()
         """
-        #threading.Thread(target=self.crawl_web, args=(0,), kwargs={'search_query': search_query}).start()
         threading.Thread(target=self.crawl_web, args=(0,), kwargs={'search_query': search_query}).start()
-        #self.crawl_web(1, kwargs={'search_query': search_query})
+
         
     def apply_filters(self):
         search_text = self.result_search_bar.text().lower()
@@ -881,17 +881,29 @@ class WebCrawlerApp(QWidget):
 
     def crawl_web(self, search_type, **kwargs):
         search_query = kwargs.get('search_query')
-
-        if (search_type == 0):
-            sea.SearchType0.search(self, search_query)
-        if (search_type == 1):
-            sea.SearchType1.search(self, search_query)
-        if (search_type == 2):
-            sea.SearchType2.search(self, search_query)
-        if (search_type == 3):
-            sea.SearchType3.search(self, search_query)
-        if (search_type == 4):
-            sea.SearchType4.search(self, search_query)
+        if isinstance(search_type, int):
+            if (search_type == 0):
+                self.SearchType0.search(search_query)
+            if (search_type == 1):
+                sea.SearchType1.search(self, search_query)
+            if (search_type == 2):
+                sea.SearchType2.search(self, search_query)
+            if (search_type == 3):
+                sea.SearchType3.search(self, search_query)
+            if (search_type == 4):
+                sea.SearchType4.search(self, search_query)
+        elif isinstance(search_type, list):
+            for search_type_item in search_type:
+                if (search_type_item == 0):
+                    self.SearchType0.search(search_query)
+                if (search_type_item == 1):
+                    sea.SearchType1.search(self, search_query)
+                if (search_type_item == 2):
+                    sea.SearchType2.search(self, search_query)
+                if (search_type_item == 3):
+                    sea.SearchType3.search(self, search_query)
+                if (search_type_item == 4):
+                    sea.SearchType4.search(self, search_query)
 
     def check_for_updates(self):
         current_db_mtime = db.get_db_mtime()

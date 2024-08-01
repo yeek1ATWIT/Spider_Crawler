@@ -278,7 +278,7 @@ def get_queries(search_query):
         queries.append(phone_format(phone_number))
     
     if search_query.street.value:
-        queries.append(search_query.phone.value)
+        queries.append(search_query.phone_number.value)
 
     if search_query.city.value:
         queries.append(search_query.city.value)
@@ -461,6 +461,7 @@ def fill_in_URL(url, search_query):
             'Doe': search_query.last_name.value,
             '4321 Main St': search_query.street.value,
             '4321+Main+St': search_query.street.value.replace(' ','+'),
+            '4321-Main-St': search_query.street.value.replace(' ','-'),
             'Dallas': search_query_city,
             'TX': search_query_state,
             'Texas': search_query_state,
@@ -830,11 +831,11 @@ def parse_engine(search_query):
 def query(search_query):
     search_query = capitalize_name(search_query)
 
-    with ThreadPoolExecutor(max_workers=3) as executor:
+    with ThreadPoolExecutor(max_workers=2) as executor:
         futures = [
             executor.submit(parse_picture, search_query),
-            executor.submit(parse_scrapers, search_query),
-            #executor.submit(parse_engine, search_query)
+            #executor.submit(parse_scrapers, search_query),
+            executor.submit(parse_engine, search_query)
         ]
 
         for future in as_completed(futures):
