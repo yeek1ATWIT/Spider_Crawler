@@ -89,16 +89,38 @@ command "self.update_ai_text("Insert thing here")".
 
 Do whatever- especially with this file.
 """
+import multiprocessing
 class SearchType0:
-    def search(self, search_query2):
-        # Convert the settings module to a dictionary
-        settings = {attr: getattr(settings_module, attr) for attr in dir(settings_module) if not attr.startswith("__")}
+    def __init__(self):
+        self.settings = {attr: getattr(settings_module, attr) for attr in dir(settings_module) if not attr.startswith("__")}
+        self.processes = []
 
-        process = CrawlerProcess(settings)
-        process.crawl(CrawlingSpider, search_query=search_query2)
-        process.start()
-        #print("SearchType0 Activated!\n")
-        #self.update_ai_text("HI!")
+    def run_crawl(search_query2):
+        settings = {attr: getattr(settings_module, attr) for attr in dir(settings_module) if not attr.startswith("__")}
+        current_process = CrawlerProcess(settings)
+        current_process.crawl(CrawlingSpider, search_query=search_query2)
+        current_process.start()
+
+    def search(self, search_query2):
+        # If there's an ongoing crawl, wait for it to finish
+        for p in self.processes:
+            if p.is_alive():
+                p.terminate()
+                p.join()
+        
+        # Clear the list of processes
+        self.processes = []
+        # Start a new crawl in a separate thread
+        current_thread = multiprocessing.Process(target=SearchType1.search2, args=(search_query2,))
+        self.processes.append(current_thread)
+        current_thread.start()
+
+        current_thread2 = multiprocessing.Process(target=SearchType0.run_crawl, args=(search_query2,))
+        self.processes.append(current_thread2)
+        current_thread2.start()
+        
+        current_thread.join()
+        current_thread2.join()
 
 class SearchType1:
     def calculate_relevance(document_text, inputs, weights):
@@ -350,6 +372,8 @@ class SearchType1:
         for link in links: 
             results.extend(SearchType1.parse_html(SearchType1.fetch_html(link), 'a', {'href': True}))
         return results
+    def search2(search_query):
+        documents = queryURLs.query(search_query)
 
     def search(self, search_query):
         """

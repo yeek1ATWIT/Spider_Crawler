@@ -5,6 +5,8 @@ import search
 import database as db
 from bs4 import BeautifulSoup
 import json
+import csv
+from collections import defaultdict
 
 class CrawlingSpider(Spider):
 
@@ -22,7 +24,7 @@ class CrawlingSpider(Spider):
         # IF TRUE, IT ADLIBS THE URLS ON "formattedSearchURLs.txt"
         # IF FALSE, IT USES THE URLS ON "formattedSearchURLs.txt" DIRECTLY
         # RIGHT NOT IT'S SET TO FALSE, SO IT'S NOT READING ANY CREDENTIALS SUBMITTED TO THE UI
-        enableInput = False
+        enableInput = True
         if enableInput:
             for url in urls:
                 moo = query.fill_in_URL(url, search_query)
@@ -30,7 +32,7 @@ class CrawlingSpider(Spider):
         else:
             for url in urls:
                 self.start_urls.append(f"{url}")
-        #----------------------------------------------#
+        #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
         """
         # Setting rules dynamically based on the provided search query
         self.rules = (
@@ -43,6 +45,8 @@ class CrawlingSpider(Spider):
         self.already_done = False
 
     def update_relevance_score(self, search_query, document, picture_in_document=False):
+        if document.info is None:
+            document.info = ""
         document_info_lower = document.info.lower()
 
         # Tests if name is in document
@@ -90,10 +94,27 @@ class CrawlingSpider(Spider):
             return []
 
         def extract_text(tag):
+            def get_css_selector(tag):
+                path = []
+                while tag is not None:
+                    name = tag.name
+                    if name == '[document]':
+                        break
+                    # Add the tag name to the path
+                    path.append(name)
+                    tag = tag.parent
+                return ' > '.join(path[::-1])
             result = []
             text = tag.get_text(separator='\n').strip()
+            css_selector = get_css_selector(tag)
+
             if text:
-                result.append(' '.join(text.split()))
+                if tag.get('class') is None:
+                    result.append(' '.join(text.split())+' |||'+str(css_selector).replace(" ", "")+str([tag.get(attr) for attr in tag.attrs.keys()]))
+                elif tag.get('class') is list or tag.get('class') is dict:
+                    result.append(' '.join(text.split())+' |||'+str(css_selector).replace(" ", "")+str([tag.get(attr) for attr in tag.attrs.keys()]).replace(" ", ""))
+                else: 
+                    result.append(' '.join(text.split())+' |||'+str(css_selector).replace(" ", "")+str([tag.get(attr) for attr in tag.attrs.keys()]).replace(" ", ""))
             for child in tag.children:
                 if child.name:
                     result.extend(extract_text(child))
@@ -124,7 +145,7 @@ class CrawlingSpider(Spider):
         return result
 
     def ishardcoded(self, url):
-        hardcoded_urls = list(query.get_URLs_from_file("hardcodedURLs.txt"))
+        hardcoded_urls = list(query.get_URLs_from_file("hardcodedURLs2.txt"))
         #if "website.com" in hardcoded_urls[0]:
         #    hardcoded_urls.remove() # Removes sample
         compare_urls = []
@@ -143,45 +164,74 @@ class CrawlingSpider(Spider):
             return result[r_index]
         
         return None
-        
+
+    def getAddressCSV(self):
+        state_to_cities = defaultdict(lambda: {'code': '', 'cities': set()})
+        city_to_states = defaultdict(list)
+
+        with open('csv/kelvins/us_cities.csv', newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                state_name = row['STATE_NAME']
+                state_code = row['STATE_CODE']
+                city = row['CITY']
+
+                state_to_cities[state_name]['code'] = state_code
+                state_to_cities[state_name]['cities'].add(city)
+                city_to_states[city].append((state_name, state_code))
+
+        states = list(state_to_cities.keys())
+        state_codes = [info['code'] for info in state_to_cities.values()]
+        cities = list(city_to_states.keys())
+
+        state_to_cities = {state: {'code': info['code'], 'cities': list(info['cities'])} for state, info in state_to_cities.items()}
+
+        return states, state_codes
+
+    def is_words_in_list(self, words, _list):
+        if isinstance(words, str):
+            words = words.split(" ")
+        if isinstance(_list, str):
+            _list = _list.split(" ")
+        if isinstance(words, list):
+            for word in words:
+                if word.lower() in [x.lower() for x in _list]:
+                    return True
+        return False
+
+    def htmlTable(self, entries):
+        if not entries:
+            return None
+        filler = '&nbsp;' * 300  # Adjust the number of spaces as needed
+
+        # Create the HTML content with bordered boxes for each match
+        html_content = '<table>'
+        for i in range(0, len(entries), 2):
+            row = '<tr>'
+            row += '<td style="border: 1px solid black; padding: 10px; width: 50%;">' + entries[i].replace("\n", "<br>") + '<span style="visibility:hidden;">' + filler + '</span></td>'
+            if i + 1 < len(entries):
+                row += '<td style="border: 1px solid black; padding: 10px; width: 50%;">' + entries[i + 1].replace("\n", "<br>") + '<span style="visibility:hidden;">' + filler + '</span></td>'
+            row += '</tr>'
+            html_content += row
+        html_content += '</table>'
+
+        return html_content
+    
     def parse(self, response):
         document = search.Document(response.url)
-        document.info = query.highlight_names2(query.extract_text_from_html2(document.url, self.search_query))
-        #query.updateRelevance(self.search_query, document)
-    
-        # HERE'S THE NAME AND PHONE IF YOU STILL WANT IT
-        name = response.css('b::text').get()
-        phone = response.css('h1::text').get()
-        if name and phone:
-            document.info = "Name: "+name+"<br>Phone: "+phone
-        if name:
-            document.info = "Name: "+name+"<br>Phone: "
-        if phone:
-            document.info = "Name: "+"<br>Phone: "+phone
-        else:
-            document.info = "Name: "+"<br>Phone: "
-        document.info += '<br>'
-        #---------------------------------------------#
-
-        document.info += '<br>'.join(self.extract_text_from_html2(response.text))
-
-        ## NOTE FOR ME THIS IS REAL CODE
-        self.update_relevance_score(self.search_query, document)
-        if document.info:
-            db.save_document_to_db(document)
-        ##--------------------------------
+        
 
         # HARDCODED CODE
-        urls = query.get_URLs_from_file("formattedSearchURLs.txt")
         stur = response.url.replace("https://", "").replace("http://", "").replace("www.", "") 
         
-        hardcoded_urls = query.get_URLs_from_file("hardcodedURLs.txt")
+        hardcoded_urls = query.get_URLs_from_file("hardcodedURLs2.txt")
 
         jeff =  any(s.split(" ", 1)[0].replace("https://", "").replace("http://", "").replace("www.", "") in stur for s in hardcoded_urls)
 
         stur = response.url.replace("https://", "").replace("http://", "").replace("www.", "") 
         
-        if jeff and not self.already_done:
+        #jeff = False
+        if jeff: #and not self.already_done:
             self.already_done = True
             hardcoded_stuff = self.ishardcoded(response.url)
             words = hardcoded_stuff.split(' ')
@@ -190,6 +240,7 @@ class CrawlingSpider(Spider):
             name2 = json.loads(words[1])
             phone2 = json.loads(words[2])
             address2 = json.loads(words[3])
+            age2 = json.loads(words[4])
 
             def find(indexes):
                 output = ""
@@ -198,17 +249,77 @@ class CrawlingSpider(Spider):
                     output += table[int(index)].split(": ", 1)[1]
                     output += "\n"
                 return output
-            result = "ALREADY HARDCODED!\n"
-            result += "Name:\n"+find(name2)
-            result += "Phone:\n"+find(phone2)
-            result += "Address:\n"+find(address2)
-
-            g = open("hardcodedOutput.txt", "w")
-            g.write(result)
-            g.close() 
             
-        elif any(stur in s for s in urls) and not self.already_done:
-            f = open("hardcodedOutput.txt", "w")
-            f.write(document.info.replace("<br>", "\n"))
-            f.close()
+            def findClassForAge(classes):
+                output = ""
+                for _class in classes:
+                    for item in table:
+                        test_item = item.split(": ", 1)[1].split("|||", 1)[1]
+                        html_stuff = item.split(": ", 1)[1].split("|||", 1)[0]
+                        numbers = sum(c.isdigit() for c in html_stuff)
+                        if _class == test_item and numbers > 0 and html_stuff.count(" ") < 10 and "None" not in _class and item.split(": ", 1)[1].split("|||", 1)[0] not in output:
+                            output += html_stuff
+                            output += '\n'
+                return output
+            
+            def findClassForName(classes):
+                output = ""
+                states, state_codes = self.getAddressCSV()
+                for _class in classes:
+                    for item in table:
+                        test_item = item.split(": ", 1)[1].split("|||", 1)[1]
+                        html_stuff = item.split(": ", 1)[1].split("|||", 1)[0]
+                        if _class == test_item and len(html_stuff) > 3 and html_stuff.count(" ") < 8 and not self.is_words_in_list(html_stuff, states) and not self.is_words_in_list(html_stuff, state_codes) and "None" not in _class and item.split(": ", 1)[1].split("|||", 1)[0] not in output:
+                            output += html_stuff
+                            output += '\n'
+                return output
+            
+            def findClassForPhone(classes):
+                output = ""
+                for _class in classes:
+                    for item in table:
+                        test_item = item.split(": ", 1)[1].split("|||", 1)[1]
+                        html_stuff = item.split(": ", 1)[1].split("|||", 1)[0]
+                        numbers = sum(c.isdigit() for c in html_stuff)
+                        if _class == test_item and numbers > 8 and html_stuff.count(" ") < 4 and "None" not in _class and item.split(": ", 1)[1].split("|||", 1)[0] not in output:
+                            output += html_stuff
+                            output += '\n'
+                return output
+
+            def findClassForAddress(names, classes):
+                output = ""
+                
+                for _class in classes:
+                    for item in table:
+                        test_item = item.split(": ", 1)[1].split("|||", 1)[1]
+                        html_stuff = item.split(": ", 1)[1].split("|||", 1)[0]
+                        numbers = sum(c.isdigit() for c in html_stuff)
+                        if _class == test_item and not self.is_words_in_list([i for i in names.replace("\n", " ").split(" ") if (len(i) > 1 and not ":" in i)], html_stuff) and numbers < 8 and html_stuff.count(" ") < 15 and "None" not in _class and item.split(": ", 1)[1].split("|||", 1)[0] not in output:
+                            output += html_stuff
+                            output += '\n'
+                return output
+
+            result = "Name:\n"+findClassForName(name2)
+            result += "Phone:\n"+findClassForPhone(phone2)
+            result += "Address:\n"+findClassForAddress(result, address2)
+            result += "Age:\n"+findClassForAge(age2)
+
+            entries = []
+            entries.append("Name:\n"+findClassForName(name2))
+            entries.append("Phone:\n"+findClassForPhone(phone2))
+            entries.append("Address:\n"+findClassForAddress(result, address2))
+            entries.append("Age:\n"+findClassForAge(age2))
+            document.info = self.htmlTable(entries)
+
+        else:
+            document.info = query.highlight_names2(query.extract_text_from_html2(document.url, self.search_query))
+        #query.updateRelevance(self.search_query, document)
+    
+        ## NOTE FOR ME THIS IS REAL CODE
+        self.update_relevance_score(self.search_query, document)
+        if document.info:
+            db.save_document_to_db(document)
+        ##-------------------------------------------------------------------------------------------------------------------------------------------------
+
+    
 
