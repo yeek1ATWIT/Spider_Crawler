@@ -11,14 +11,3 @@ from itemadapter import ItemAdapter
 class SpidPipeline:
     def process_item(self, item, spider):
         return item
-
-
-# import mysql.connector
-# class SaveToMySQLPipeline:
-#     self.conn = mysql.connector.connect(
-#         host = 'localhost',
-#         root = 'root',
-#         database = 'web_crawler',
-#     )
-
-# self
